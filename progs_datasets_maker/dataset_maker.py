@@ -36,6 +36,9 @@ class DataSet_Maker():
 
     def linha_txt(self,board: List[str], classe: str) -> str:
         return ";".join(board) + ";" + classe
+    
+    def linha_txt_all(self,board: List[str]) -> str:
+        return ";".join(board)
 
     # ----------------- Geração de todas as partidas -----------------
     def gerar_partidas(self,primeiro: str = '1') -> Iterable[Tuple[List[int], List[str], Optional[str]]]:
@@ -72,6 +75,44 @@ class DataSet_Maker():
             w = csv.writer(f, delimiter=";")
             w.writerow(header)
             w.writerows(linhas)
+
+
+    def exec_all(self):
+        saida_txt = "jogos_255168_final_com_classe.txt"
+        saida_csv = "jogos_255168_final_com_classe.csv"
+
+        vistos = set()
+        linhas = []
+
+        for seq, final_board, _ in self.gerar_partidas('1'):
+            key = "".join(final_board)
+            if key in vistos:
+                continue  # já vimos esse jogo
+            vistos.add(key)
+            print(final_board)
+            classe = self.classificar(final_board)
+            linhas.append(self.linha_txt(final_board, classe))
+
+        print(f"✔️ Total de jogos únicos: {len(linhas)} (esperado: 255.168)")
+
+        # Salvar em TXT
+        with open(saida_txt, "w", encoding="utf-8") as f:
+            f.write("pos1;pos2;pos3;pos4;pos5;pos6;pos7;pos8;pos9;classe\n")
+            for linha in linhas:
+                f.write(linha + "\n")
+
+        # Salvar em CSV
+        with open(saida_csv, "w", encoding="utf-8", newline="") as f:
+            writer = csv.writer(f, delimiter=";")
+            writer.writerow(["pos1", "pos2", "pos3", "pos4", "pos5", "pos6", "pos7", "pos8", "pos9", "classe"])
+            for linha in linhas:
+                writer.writerow(linha.split(";"))
+
+        print("✅ Arquivos gerados:")
+        print(" -", saida_txt)
+        print(" -", saida_csv)
+
+
 
     def exec(self):
         saida = "amostras.txt"

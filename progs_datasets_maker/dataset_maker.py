@@ -76,86 +76,7 @@ class DataSet_Maker():
             w.writerow(header)
             w.writerows(linhas)
 
-
-    def exec_all(self):
-        saida_txt = "jogos_255168_final_com_classe.txt"
-        saida_csv = "jogos_255168_final_com_classe.csv"
-
-        vistos = set()
-        linhas = []
-
-        for seq, final_board, _ in self.gerar_partidas('1'):
-            key = "".join(final_board)
-            if key in vistos:
-                continue  # já vimos esse jogo
-            vistos.add(key)
-            print(final_board)
-            classe = self.classificar(final_board)
-            linhas.append(self.linha_txt(final_board, classe))
-
-        print(f"✔️ Total de jogos únicos: {len(linhas)} (esperado: 255.168)")
-
-        # Salvar em TXT
-        with open(saida_txt, "w", encoding="utf-8") as f:
-            f.write("pos1;pos2;pos3;pos4;pos5;pos6;pos7;pos8;pos9;classe\n")
-            for linha in linhas:
-                f.write(linha + "\n")
-
-        # Salvar em CSV
-        with open(saida_csv, "w", encoding="utf-8", newline="") as f:
-            writer = csv.writer(f, delimiter=";")
-            writer.writerow(["pos1", "pos2", "pos3", "pos4", "pos5", "pos6", "pos7", "pos8", "pos9", "classe"])
-            for linha in linhas:
-                writer.writerow(linha.split(";"))
-
-        print("✅ Arquivos gerados:")
-        print(" -", saida_txt)
-        print(" -", saida_csv)
-
-
-
-    def exec(self):
-        saida = "amostras.txt"
-        saida_csv = 'amostras.csv'
-        exit = 0
-        vistos = set()
-        amostras = {"Fim_de_jogo": 0, "Possibilidade_de_fim_de_jogo": 0, "Em_jogo": 0}
-        limite = 83
-
-        with open(saida, "w", encoding="utf-8") as f:
-            f.write('pos1;pos2;pos3;pos4;pos5;pos6;pos7;pos8;pos9;classe\n')
-            for seq, _, _ in self.gerar_partidas('1'):
-                board = ['0'] * 9
-                player = '1'
-
-                for ply in range(len(seq) + 1):
-                    key = "".join(board)
-                    if key not in vistos:
-                        vistos.add(key)
-                        classe = self.classificar(board)
-                        if amostras[classe] < limite:
-                            f.write(self.linha_txt(board, classe) + "\n")
-                            amostras[classe] += 1
-
-                        # se já atingimos 250 de cada, paramos tudo
-                        if all(v >= limite for v in amostras.values()):
-                            exit = 1
-                            break
-                    if ply == len(seq):
-                        break
-                    
-                    idx = seq[ply]
-                    board[idx] = player
-                    player = '-1' if player == '1' else '1'
-                if exit == 1:
-                    break
-        with open(saida, "r", encoding="utf-8") as txt_file:
-            reader = csv.reader(txt_file, delimiter=";")
-            rows = list(reader)
-        with open(saida_csv, "w", encoding="utf-8", newline="") as csv_file:
-            writer = csv.writer(csv_file, delimiter=";")
-            writer.writerows(rows)
-
+   
     def vencedor_board(self, board):
         if self.check_win(board, '1'):
             return '1'
@@ -171,13 +92,13 @@ class DataSet_Maker():
         vistos = set()
 
         # ------ alvo TOTAL ------
-        total_alvo = 250
+        total_alvo = 750
 
         # 1) Cotas por CLASSE (84+83+83 = 250)
         targets_classe = {
-            "Fim_de_jogo": 84,
-            "Possibilidade_de_fim_de_jogo": 83,
-            "Em_jogo": 83
+            "Fim_de_jogo": 250,
+            "Possibilidade_de_fim_de_jogo": 250,
+            "Em_jogo": 250
         }
 
         # 2) Subcotas em FINAIS para garantir -1 vencendo
@@ -190,7 +111,7 @@ class DataSet_Maker():
 
         # 3) Cotas por POS1 (mais exemplos começando com -1)
         #    Distribuição 84/83/83 com a sobra para '-1'
-        targets_pos1 = {'-1': 84, '1': 83, '0': 83}
+        targets_pos1 = {'-1': 250, '1': 250, '0': 250}
         cont_pos1 = {'-1': 0, '1': 0, '0': 0}
 
         # Contadores por classe
@@ -256,8 +177,6 @@ class DataSet_Maker():
         with open(saida_csv, "w", encoding="utf-8", newline="") as csv_file:
             writer = csv.writer(csv_file, delimiter=";")
             writer.writerows(rows)
-
-
     
                 
 

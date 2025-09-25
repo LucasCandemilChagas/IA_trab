@@ -6,9 +6,8 @@ import os
 def main():
     #DataSet_Maker().exec()
     DataSet_Maker().exec_()
-    DataSet_Maker().exec_all()
-    #for arquivo in glob.glob("*.txt"):
-    #    os.remove(arquivo)
+    for arquivo in glob.glob("*.txt"):
+        os.remove(arquivo)
 
 if __name__ == "__main__":
     main()

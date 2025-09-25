@@ -5,10 +5,10 @@ from sklearn.model_selection import train_test_split as tts
 jogadas_k_nn = []
 
 def k_NN(X,y,teste_X,teste_y,jogos):
-    clf = neighbors.KNeighborsClassifier(n_neighbors=8)
+    clf = neighbors.KNeighborsClassifier(n_neighbors=14)
     clf.fit(X.values, y)
     predicao = clf.predict(jogos)
-    print(f'k = 4 Acuracia = {clf.score(teste_X.values,teste_y)}')
+    print(f'k = 14 Acuracia = {clf.score(teste_X.values,teste_y)}')
     return predicao
 
     

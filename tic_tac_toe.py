@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split as tts
 from sklearn.metrics import accuracy_score
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier as DTC
+from sklearn.ensemble import RandomForestClassifier
 
 import numpy as np
 
@@ -38,6 +39,21 @@ def arv_decisao(X,y,teste_X,teste_y,jogos):
     print(f'Acuracia da Arvore = {acuracia}')
     return jogos_pred_y
 
+def rf(X,y,teste_X,teste_y,jogos):
+    # Modelo Random Forest com parâmetros padrão
+    rf_model = RandomForestClassifier(
+        n_estimators=300,
+        random_state=42,
+        n_jobs=-1,  # Usar todos os cores disponíveis
+        min_samples_split=10
+    )
+
+    rf_model.fit(X, y)
+    y_pred = rf_model.predict(teste_X)
+    accuracy_expl = accuracy_score(teste_y, y_pred)
+
+    print(f"\nAcurácia: {accuracy_expl:.4f} ({accuracy_expl*100:.2f}%)")
+    return rf_model.predict(jogos)
 
 def print_mat(mat):
     for l in range(len(mat)):
@@ -65,13 +81,15 @@ def main():
              -1, 1, 1]]
     jogos_df = pd.DataFrame(jogo, columns=X.columns)
 
-
+    # CODIIGO FINAL USAR MLP
     pred_k_nn = k_NN(treino_X,treino_y,teste_X,teste_y,jogos_df)
     print(pred_k_nn)
     pred_mlp = MLP(treino_X,treino_y,teste_X,teste_y,jogos_df)
     print(pred_mlp)
     pred_arv_dec = arv_decisao(treino_X,treino_y,teste_X,teste_y,jogos_df)
     print(pred_arv_dec)
+    pred_rf = rf(treino_X,treino_y,teste_X,teste_y,jogos_df)
+    print(pred_rf)
 
     
 

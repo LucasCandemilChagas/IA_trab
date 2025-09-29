@@ -1,59 +1,91 @@
 import pandas as pd
-from sklearn import neighbors
 from sklearn.model_selection import train_test_split as tts
-from sklearn.metrics import accuracy_score
 from sklearn.neural_network import MLPClassifier
-from sklearn.tree import DecisionTreeClassifier as DTC
-from sklearn.ensemble import RandomForestClassifier
-
+import random
 import numpy as np
-
+import os
+from sklearn.metrics import accuracy_score
 
 jogadas_k_nn = []
 
-def k_NN(X, y, teste_X, teste_y, jogos_df):
-    clf = neighbors.KNeighborsClassifier(n_neighbors=14)
-    clf.fit(X, y) 
-    print(f'k = 14 Acurácia = {clf.score(teste_X, teste_y):.4f}') 
-    return clf.predict(jogos_df) 
+# Representação do tabuleiro
+tabuleiro_ = [[0 for _ in range(3)] for _ in range(3)]
+tabuleiro_disp = [[' ' for _ in range(3)] for _ in range(3)]
+
+# Contadores de acertos/erros
+acertos_ = 0
+erros_ = 0
+jogadas_ = 0
+def limpar_console():
+    os.system('cls' if os.name == 'nt' else 'clear')
+def exibir_tabuleiro_():
+    global tabuleiro_disp
+    print('Algoritmo MLP sendo usado!! ')
+    for linha_ in tabuleiro_disp:
+        print("|".join(linha_))
+        print("-" * 5)
+
+
+def tabuleiro_para_df(board_2d, cols):
+    flat = np.array(board_2d, dtype=int).ravel().reshape(1, -1)
+    return pd.DataFrame(flat, columns=cols)
+
+def verificar_estado_real_(tabuleiro_):
+    # Verifica se há vencedor ou empate
+    linhas_ = tabuleiro_ + [list(col) for col in zip(*tabuleiro_)]
+    diagonais_ = [
+        [tabuleiro_[i][i] for i in range(3)],
+        [tabuleiro_[i][2 - i] for i in range(3)]
+    ]
+    todas_linhas = linhas_ + diagonais_
+
+    # 1) Verifica fim de jogo (alguém venceu ou empate)
+    for linha_ in todas_linhas:
+        if linha_[0] != 0 and linha_.count(linha_[0]) == 3:
+            return "Fim_de_jogo"
+
+    if all(c != 0 for linha_ in tabuleiro_ for c in linha_):
+        return "Fim_de_jogo"
+
+    # 2) Verifica possibilidade de fim de jogo
+    for linha_ in todas_linhas:
+        # Ex.: [1, 1, 0] ou [-1, -1, 0]
+        if (linha_.count(1) == 2 and linha_.count(0) == 1) or \
+           (linha_.count(-1) == 2 and linha_.count(0) == 1):
+            return "Possibilidade_de_fim_de_jogo"
+
+    # 3) Caso contrário, ainda está em jogo
+    return "Em_jogo"
+
+
+def jogada_humano_(tabuleiro_):
+    global tabuleiro_disp
+    while True:
+        try:
+            linha_, col_ = map(int, input("Digite linha e coluna (0-2): ").split('-'))
+            if tabuleiro_[linha_][col_] == 0:
+                tabuleiro_[linha_][col_] = 1
+                tabuleiro_disp[linha_][col_] = 'X'
+                break
+            else:
+                print("Posição ocupada!")
+        except:
+            print("Entrada inválida!")
+
+def jogada_maquina_(tabuleiro_):
+    global tabuleiro_disp
+    while True:
+        l_, c_ = random.randint(0,2), random.randint(0,2)
+        if tabuleiro_[l_][c_] == 0:
+            tabuleiro_[l_][c_] = -1
+            tabuleiro_disp[l_][c_] = 'O'
+            break
 
     
-def MLP(X,y,teste_X,teste_y,jogos):
-    clf = MLPClassifier(hidden_layer_sizes=(50,), activation='relu', solver='sgd', max_iter=10000, learning_rate_init=0.01)
+def MLP(X,y):
+    clf = MLPClassifier(hidden_layer_sizes=(50,), activation='relu', solver='sgd', max_iter=10000, learning_rate_init=0.01,momentum=0.5)
     clf.fit(X, y.ravel())
-    predicaos = clf.predict(jogos)
-    print(f'Acuracia da MLP = {accuracy_score(teste_y,clf.predict(teste_X))}')
-    return predicaos
-
-
-def arv_decisao(X,y,teste_X,teste_y,jogos):
-    modelo = DTC(random_state=42
-                ,criterion='log_loss'
-                ,min_samples_split=3
-                ,ccp_alpha=0.005        # default 0.0 Valores na documentação 0.005 0.01 0.015 0.02 0.025 0.03 0.035
-                )
-    modelo.fit(X, y)
-    teste_pred_y = modelo.predict(teste_X)
-    acuracia = accuracy_score(teste_y, teste_pred_y)
-    jogos_pred_y = modelo.predict(jogos)
-    print(f'Acuracia da Arvore = {acuracia}')
-    return jogos_pred_y
-
-def rf(X,y,teste_X,teste_y,jogos):
-    # Modelo Random Forest com parâmetros padrão
-    rf_model = RandomForestClassifier(
-        n_estimators=300,
-        random_state=42,
-        n_jobs=-1,  # Usar todos os cores disponíveis
-        min_samples_split=10
-    )
-
-    rf_model.fit(X, y)
-    y_pred = rf_model.predict(teste_X)
-    accuracy_expl = accuracy_score(teste_y, y_pred)
-
-    print(f"\nAcurácia: {accuracy_expl:.4f} ({accuracy_expl*100:.2f}%)")
-    return rf_model.predict(jogos)
+    return clf
 
 def print_mat(mat):
     for l in range(len(mat)):
@@ -64,36 +96,79 @@ def print_mat(mat):
         print(str)
 
 def main():
-    tab = [[0,0,0],[0,0,0],[0,0,0]]
+    global jogadas_, erros_, acertos_
     data = pd.read_csv('amostras_.csv',sep=';')
     X = data.drop(columns=['classe'])
+    feature_cols = list(X.columns)
     y = data['classe'].values
-    treino_X, teste_X, treino_y, teste_y = tts(X, y, random_state=42,test_size=0.1, stratify=y)
-    print(np.stack(np.unique(teste_y, return_counts=True), axis=1))
+    treino_X, _, treino_y, _ = tts(X, y, random_state=42,test_size=0.2, stratify=y)
+    mlp = MLP(treino_X,treino_y)
+    estado_real_ = None
+    pred_ = None
+    estados = []
+    preds = []
+    acertos_ = 0
+    erros_ = 0
+    while True:
+        limpar_console()
 
-    while 1:
-        
-        print_mat(tab)
-        break
+        exibir_tabuleiro_() 
+        if pred_ is None and estado_real_ is None:
+            estado_real_ = verificar_estado_real_(tabuleiro_)
+            tab = tabuleiro_para_df(tabuleiro_, feature_cols)
+            pred_ = mlp.predict(tab)
+            estados.append(estado_real_)
+            preds.append(pred_)
+            if pred_ == estado_real_:
+                acertos_ += 1
+            else:
+                erros_ += 1
+        print(f'Acertos: {acertos_}  Erros: {erros_}')
+        print(f"Acurácia até agora: {accuracy_score(estados,preds)}")
+        print(f"[IA] Predição: {pred_} | Estado real: {estado_real_}")
 
-    jogo = [[0, 1, -1,
-             1, -1, -1,
-             -1, 1, 1]]
-    jogos_df = pd.DataFrame(jogo, columns=X.columns)
+        # Jogada do humano
+        jogada_humano_(tabuleiro_)
+        estado_real_ = verificar_estado_real_(tabuleiro_)
 
-    # CODIIGO FINAL USAR MLP
-    pred_k_nn = k_NN(treino_X,treino_y,teste_X,teste_y,jogos_df)
-    print(pred_k_nn)
-    pred_mlp = MLP(treino_X,treino_y,teste_X,teste_y,jogos_df)
-    print(pred_mlp)
-    pred_arv_dec = arv_decisao(treino_X,treino_y,teste_X,teste_y,jogos_df)
-    print(pred_arv_dec)
-    pred_rf = rf(treino_X,treino_y,teste_X,teste_y,jogos_df)
-    print(pred_rf)
+        if estado_real_ == "Fim_de_jogo":
+            limpar_console()
+            exibir_tabuleiro_() 
 
-    
+            tab = tabuleiro_para_df(tabuleiro_, feature_cols)
+            pred_ = mlp.predict(tab)
+            estados.append(estado_real_)
+            preds.append(pred_)
+            if pred_ == estado_real_:
+                acertos_ += 1
+            else:
+                erros_ += 1
+            print(f'Acertos: {acertos_}  Erros: {erros_}')
+            print(f"Acurácia final: {accuracy_score(estados,preds)}")
+            print(f"[IA] Predição final: {pred_} | Estado real: {estado_real_}")
+            print('VOCE VENCEU!!')
+            break
 
+        # Jogada da máquina
+        jogada_maquina_(tabuleiro_)
+        estado_real_ = verificar_estado_real_(tabuleiro_)
+        tab = tabuleiro_para_df(tabuleiro_, feature_cols)
+        pred_ = mlp.predict(tab)
+        estados.append(estado_real_)
+        preds.append(pred_)
+        if pred_ == estado_real_:
+            acertos_ += 1
+        else:
+            erros_ += 1
 
+        if estado_real_ == "Fim_de_jogo":
+            limpar_console()
+            exibir_tabuleiro_() 
+            print(f'Acertos: {acertos_}  Erros: {erros_}')
+            print(f"Acurácia final: {accuracy_score(estados,preds)}")
+            print(f"[IA] Predição final: {pred_} | Estado real: {estado_real_}")
+            print('VOCE PERDEU!!')
+            break
 
 if __name__ == '__main__':
     main()

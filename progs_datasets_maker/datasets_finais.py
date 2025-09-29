@@ -4,8 +4,6 @@ import glob
 import os
 
 def main():
-    #DataSet_Maker().build()
-    #DataSet_Maker().exec()
     DataSet_Maker().exec_()
     for arquivo in glob.glob("*.txt"):
         os.remove(arquivo)

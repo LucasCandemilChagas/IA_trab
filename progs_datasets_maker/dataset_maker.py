@@ -1,5 +1,7 @@
 from typing import List, Optional, Iterable, Tuple
 import csv
+import numpy as np
+import pandas as pd
 # ----------------- Regras do jogo -----------------
 WIN_LINES = [
     (0,1,2), (3,4,5), (6,7,8),     # linhas
@@ -85,6 +87,7 @@ class DataSet_Maker():
         if '0' not in board:
             return 'Empate'
         return None  # não-terminal
+    
 
     def exec_(self):
         saida = "amostras_250_total.txt"
@@ -178,73 +181,6 @@ class DataSet_Maker():
         with open(saida_csv, "w", encoding="utf-8", newline="") as csv_file:
             writer = csv.writer(csv_file, delimiter=";")
             writer.writerows(rows)
-
-    def exec_all(self, out_csv="dataset.csv", primeiro='1'):
-        vistos = set()
-        board = ['0'] * 9
-        vazias = list(range(9))
-
-        def registra():
-            vistos.add(tuple(board))
-
-        def dfs(jogador: str):
-            registra()
-            if self.terminal(board):
-                return
-            prox = '-1' if jogador == '1' else '1'
-            for idx in list(vazias):
-                board[idx] = jogador
-                vazias.remove(idx)
-                dfs(prox)
-                vazias.append(idx)
-                board[idx] = '0'
-
-        dfs(primeiro)
-        fj = 0
-        pj = 0
-        j = 0
-        with open(out_csv, "w", encoding="utf-8", newline="") as f:
-            w = csv.writer(f, delimiter=';')
-            w.writerow(['pos1','pos2','pos3','pos4','pos5','pos6','pos7','pos8','pos9','classe'])
-            for b in vistos:
-                b_list = list(b)
-                w.writerow(b_list + [self.classificar(b_list[:])])
-        
-        with open(out_csv, encoding="utf-8") as f_in, open('fim_de_jogo.csv', "w", encoding="utf-8", newline="") as f_out:
-            reader = csv.reader(f_in, delimiter=";")
-            writer = csv.writer(f_out, delimiter=";")
-
-            header = next(reader)  # lê cabeçalho
-            writer.writerow(header)  # escreve no novo arquivo
-
-            for row in reader:
-                if row[-1] == "Fim_de_jogo" and fj < 250:  # última coluna == classe
-                    fj+=1
-                    writer.writerow(row)
-        
-        with open(out_csv, encoding="utf-8") as f_in, open('possibilidade_de_fim_de_jogo.csv', "w", encoding="utf-8", newline="") as f_out:
-            reader = csv.reader(f_in, delimiter=";")
-            writer = csv.writer(f_out, delimiter=";")
-
-            header = next(reader)  # lê cabeçalho
-            writer.writerow(header)  # escreve no novo arquivo
-
-            for row in reader:
-                if row[-1] == "Possibilidade_de_fim_de_jogo" and pj < 250:  # última coluna == classe
-                    writer.writerow(row)
-                    pj+=1
-        
-        with open(out_csv, encoding="utf-8") as f_in, open('em_jogo.csv', "w", encoding="utf-8", newline="") as f_out:
-            reader = csv.reader(f_in, delimiter=";")
-            writer = csv.writer(f_out, delimiter=";")
-
-            header = next(reader)  # lê cabeçalho
-            writer.writerow(header)  # escreve no novo arquivo
-
-            for row in reader:
-                if row[-1] == "Em_jogo" and j < 250:  # última coluna == classe
-                    j+=1
-                    writer.writerow(row)
     
 
     
